@@ -40,3 +40,22 @@ class FullyConnectedLayer():
 
     def sigmoid(x):
         return 1.0/(1+np.exp(-x))
+
+    def softmax(x):
+        denom = 0
+        for i in range(0, x.size):
+            denom += np.exp(x[i])
+        return np.exp(x)/denom
+
+    def backprop(self, layer, flag, target):
+        if flag == 0:
+            # softmax layer instead of sigmoid, error function
+            output = softmax(self.lin_output)
+            self.error = output - target
+            self.gradient_w = self.error*np.transpose(self.input)
+            self.gradient_b = self.error
+        else:
+            # sigmoid layer connected to another layer after it--these may not be correct, will need to calculate
+            self.error = np.transpose(self.W)*layer.error*self.input*(1-self.input) #input*(1-input) is derivative of sigmoid
+            self.gradient_w = layer.error*np.transpose(self.input)
+            self.gradient_b = layer.error

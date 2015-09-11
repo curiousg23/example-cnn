@@ -48,16 +48,30 @@ class ConvLayer():
             conv_output[:,:,i] += conv_output[:,:,i] + bias[i]
 
         #apply sigmoid
-        conv_output = np.tanh(conv_output)
+        output = np.tanh(conv_output)
         self.conv_output = conv_output
-        
-        # max-pooling operation
-        output = np.zeros((conv_output.shape[0]/2, conv_output.shape[1]/2, conv_output.shape[2]))
-        for k in range(0, conv_output.shape[2]):
-            for i in range(0, conv_output.shape[0]/2):
-                for j in range(0, conv_output.shape[1]/2):
-                    output[i,j,k] = np.amax(conv_output[2*i:2*i+3, 2*j:2*j+3, k])
 
         # output is a 3-D matrix, essentially a 'stacking' of the different feature maps produced
         self.output = output
-        self.params = [self.W, self.b]
+        self.W = W
+        self.bias = bias
+        self.params = [W, bias]
+
+    def backprop(self, layer):
+        # previous layer should always be a pooling layer--the layer should have upsample() called
+        self.error = np.zeros(output.shape)
+        for i in range(0, layer.output.shape[2]):
+            # for each filter do the following
+            self.error[:,:,i] = np.multiply(layer.error, (1 - np.multiply(layer.error, layer.error)))
+        # now to calculate gradients
+        for i in range(0, self.filter_shape[0]):
+            for j in range(0, self.filter_shape[1]):
+                if j == 0:
+                    self.gradient_w[:,:,i] = sig.convolve2d(input[j,:,:], np.rot90(self.error[:,:,i], 2), mode='valid')
+                else:
+                    self.gradient_w[:,:,i] += sig.convolve2d(input[j,:,:], np.rot90(self.error[:,:,i], 2), mode='valid')
+        # may not be correct form of the bias gradient
+        self.gradient_b = np.array(i)
+        for i in range(0, self.filter_shape[0]):
+            self.gradient_b[i] = np.sum(self.error[:,:,i])
+        
