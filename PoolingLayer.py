@@ -50,5 +50,18 @@ class PoolingLayer():
                             self.error[2*i+1,2*j+1,k] = vec_error[i+j+k]
         else:
             # previous layer was another convolutional layer--no need to re-map into feature maps
-            # will need to figure out how to get the necessary gradients and errors, though 
+            # will need to figure out how to get the necessary gradients and errors, though
+            # no weights applied, so no weights come into the backprop?
             self.error = np.zeros(self.input_shape)
+            for i in range(0, self.output.shape[0]):
+                for j in range(0, self.output.shape[1]):
+                    for k in range(0, self.output-shape[2]):
+                        # generalize mapping later
+                        if max_indices[i,j,k] == 0:
+                            self.error[2*i,2*j,k] = layer.error[i,j,k]
+                        elif max_indices[i,j,k] == 1:
+                            self.error[2*i,2*j+1,k] = layer.error[i,j,k]
+                        elif max_indices[i,j,k] == 2:
+                            self.error[2*i+1,2*j,k] = layer.error[i,j,k]
+                        else:
+                            self.error[2*i+1,2*j+1,k] = layer.error[i,j,k]

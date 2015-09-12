@@ -56,6 +56,6 @@ class FullyConnectedLayer():
             self.gradient_b = self.error
         else:
             # sigmoid layer connected to another layer after it--these may not be correct, will need to calculate
-            self.error = np.transpose(self.W)*layer.error*self.input*(1-self.input) #input*(1-input) is derivative of sigmoid
-            self.gradient_w = layer.error*np.transpose(self.input)
-            self.gradient_b = layer.error
+            self.error = np.multiply(np.transpose(layer.W)*layer.error, np.multiply(self.output, 1-self.output)) #derivative of sigmoid is sigma*(1-sigma)
+            self.gradient_w = self.error*np.transpose(self.input)
+            self.gradient_b = self.error
