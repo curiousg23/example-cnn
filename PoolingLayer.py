@@ -17,9 +17,11 @@ class PoolingLayer():
 
         self.input = input
         self.input_shape = input_shape
+
+    def downsample(self, input, input_shape):
         # max-pooling operation
         output = np.zeros((input_shape[0]/2, input_shape[1]/2, input_shape[2]))
-        max_indices[i,j,k] = np.zeros((input_shape[0]/2, input_shape[1]/2, input_shape[2]))
+        max_indices = np.zeros((input_shape[0]/2, input_shape[1]/2, input_shape[2]))
         for k in range(0, input_shape[2]):
             for i in range(0, input_shape[0]/2):
                 for j in range(0, input_shape[1]/2):
@@ -33,18 +35,18 @@ class PoolingLayer():
         if flag == 0:
             # previous layer was a fully connected layer, so output was flattened into a vector
             # first determine the partials for the vector components, then re-map into feature maps
-            vec_error = np.transpose(layer.W)*layer.error
+            vec_error = np.dot(np.transpose(layer.W), layer.error)
             self.error = np.zeros(self.input_shape)
             # map back to feature maps
             for i in range(0, self.output.shape[0]):
                 for j in range(0, self.output.shape[1]):
                     for k in range(0, self.output.shape[2]):
                         # generalize this mapping later
-                        if max_indices[i,j,k] == 0:
+                        if self.max_indices[i,j,k] == 0:
                             self.error[2*i,2*j,k] = vec_error[i+j+k]
-                        elif max_indices[i,j,k] == 1:
+                        elif self.max_indices[i,j,k] == 1:
                             self.error[2*i,2*j+1,k] = vec_error[i+j+k]
-                        elif max_indices[i,j,k] == 2:
+                        elif self.max_indices[i,j,k] == 2:
                             self.error[2*i+1,2*j,k] = vec_error[i+j+k]
                         else:
                             self.error[2*i+1,2*j+1,k] = vec_error[i+j+k]
@@ -55,13 +57,13 @@ class PoolingLayer():
             self.error = np.zeros(self.input_shape)
             for i in range(0, self.output.shape[0]):
                 for j in range(0, self.output.shape[1]):
-                    for k in range(0, self.output-shape[2]):
+                    for k in range(0, self.output.shape[2]):
                         # generalize mapping later
-                        if max_indices[i,j,k] == 0:
+                        if self.max_indices[i,j,k] == 0:
                             self.error[2*i,2*j,k] = layer.error[i,j,k]
-                        elif max_indices[i,j,k] == 1:
+                        elif self.max_indices[i,j,k] == 1:
                             self.error[2*i,2*j+1,k] = layer.error[i,j,k]
-                        elif max_indices[i,j,k] == 2:
+                        elif self.max_indices[i,j,k] == 2:
                             self.error[2*i+1,2*j,k] = layer.error[i,j,k]
                         else:
                             self.error[2*i+1,2*j+1,k] = layer.error[i,j,k]

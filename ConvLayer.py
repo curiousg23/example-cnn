@@ -6,26 +6,21 @@ import scipy.signal as sig
 class ConvLayer():
     """Perform the convolution and apply the sigmoid activation for a layer, then perform pooling"""
 
-    def __init__(self, input, prev_layer_shape, filter_shape, pooling_x, pooling_y):
+    def __init__(self, input, prev_layer_shape, filter_shape):
         """
         :type input: 3-d matrix at the moment
         :param input: the input to the layer--either a 2-D matrix or set of 2-D feature maps
 
         :type prev_layer_shape: tuple
-        :param prev_layer_shape: (num input feature maps, height, width) of the previous layer
+        :param prev_layer_shape: (height, width, num feature maps) of the previous layer
 
         :type filter_shape: tuple
-        :param filter_shape: (num filters, num input feature maps, height, width)
-
-        :type pooling_x: int
-        :param pooling_x: Determine num of rows in the max-pooling matrix
-
-        :type pooling_y: int
-        :param pooling_y: Determine num of columns in the max-pooling matrix
+        :param filter_shape: (height, width, num filters, num input feature maps)
         """
 
         self.input = input
-
+        self.prev_layer_shape = prev_layer_shape
+        self.filter_shape = filter_shape
         # instantiate weight matrix
         rng = rand.RandomState(23455)
         W = np.asarray(rng.uniform(low=-1.0/(filter_shape[0]*filter_shape[1]*filter_shape[2]),
@@ -34,18 +29,25 @@ class ConvLayer():
         ))
 
         # instantiate bias. need a bias for each filter
-        bias_shape = (filter_shape[0],)
+        bias_shape = (filter_shape[2],)
         bias = np.asarray(rng.uniform(low=-0.5, high=-0.5, size=bias_shape))
 
+        self.W = W
+        self.bias = bias
+        self.bias_shape = bias_shape
+        self.params = [W, bias]
+
+    # perform forward propagation--generate the output
+    def forwardprop(self, input):
         # perform the convolution, each feature map with its respective layer,
         # sum the resultant convolution layers together
-        conv_output = np.zeros((prev_layer_shape[2]-filter_shape[2]+1, prev_layer_shape[3]-filter_shape[3]+1, filter_shape[0]))
-        for i in range(0, filter_shape[0]):
-            for j in range(0, filter_shape[1]):
+        conv_output = np.zeros((self.prev_layer_shape[0]-self.filter_shape[0]+1, self.prev_layer_shape[1]-self.filter_shape[1]+1, self.filter_shape[2]))
+        for i in range(0, self.filter_shape[2]):
+            for j in range(0, self.filter_shape[3]):
                 #rotation keeps the convolution matrix oriented correctly
-                conv_output[:,:,i] += sig.convolve2d(input[j,:,:], np.rot90(W[j,i,:,:], 2), mode='valid')
+                conv_output[:,:,i] += sig.convolve2d(input[:,:,j], np.rot90(self.W[:,:,i,j], 2), mode='valid')
             #add bias for this filter
-            conv_output[:,:,i] += conv_output[:,:,i] + bias[i]
+            conv_output[:,:,i] += conv_output[:,:,i] + self.bias[i]
 
         #apply sigmoid
         output = np.tanh(conv_output)
@@ -53,25 +55,22 @@ class ConvLayer():
 
         # output is a 3-D matrix, essentially a 'stacking' of the different feature maps produced
         self.output = output
-        self.W = W
-        self.bias = bias
-        self.params = [W, bias]
 
     def backprop(self, layer):
         # previous layer should always be a pooling layer--the layer should have upsample() called
-        self.error = np.zeros(output.shape)
+        self.error = np.zeros(self.output.shape)
         for i in range(0, layer.output.shape[2]):
             # for each filter do the following
-            self.error[:,:,i] = np.multiply(layer.error, (1 - np.multiply(layer.error, layer.error)))
+            self.error[:,:,i] = np.multiply(layer.error[:,:,i], (1 - np.multiply(layer.error[:,:,i], layer.error[:,:,i])))
         # now to calculate gradients
-        for i in range(0, self.filter_shape[0]):
-            for j in range(0, self.filter_shape[1]):
+        self.gradient_w = np.zeros((self.filter_shape[0], self.filter_shape[1], self.filter_shape[2]))
+        for i in range(0, self.filter_shape[2]):
+            for j in range(0, self.filter_shape[3]):
                 if j == 0:
-                    self.gradient_w[:,:,i] = sig.convolve2d(input[j,:,:], np.rot90(self.error[:,:,i], 2), mode='valid')
+                    self.gradient_w[:,:,i] = sig.convolve2d(self.input[:,:,j], np.rot90(self.error[:,:,i], 2), mode='valid')
                 else:
-                    self.gradient_w[:,:,i] += sig.convolve2d(input[j,:,:], np.rot90(self.error[:,:,i], 2), mode='valid')
+                    self.gradient_w[:,:,i] += sig.convolve2d(self.input[:,:,j], np.rot90(self.error[:,:,i], 2), mode='valid')
         # may not be correct form of the bias gradient
-        self.gradient_b = np.array(i)
-        for i in range(0, self.filter_shape[0]):
+        self.gradient_b = np.zeros(self.filter_shape[2])
+        for i in range(0, self.filter_shape[2]):
             self.gradient_b[i] = np.sum(self.error[:,:,i])
-        
