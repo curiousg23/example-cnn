@@ -8,20 +8,14 @@ class FullyConnectedLayer():
     or the last pooling layer--will flatten the feature maps into one giant vector)
     A sigmoid activation function is used"""
 
-    def __init__(self, input, f_in, f_out):
+    def __init__(self, f_in, f_out):
         """
-        :type input: vector(?) or matrix with (length of flattened feature vector, num of inputs)
-        :param input: the input to the fully-connected layer--likely 1-D
-
         :type f_in: int
         :param f_in: the number of inputs--links from the previous layer
 
         :type f_out: int
         :param f_out: the number of outputs--inputs to the next layer
         """
-
-        self.input = input
-
         # weight matrix initialization
         rng = rand.RandomState(23455)
         W = np.asarray(rng.uniform(low=-1.0/(np.sqrt(f_in)), high=1.0/(np.sqrt(f_in)), size=(f_out,f_in)))
@@ -42,9 +36,14 @@ class FullyConnectedLayer():
         return np.exp(x)/denom
 
     def forwardprop(self, input):
+        """
+        :type input: vector(?) or matrix with (length of flattened feature vector, num of inputs)
+        :param input: the input to the fully-connected layer--likely 1-D
+        """
         #perform activation
         lin_output = np.dot(self.W, input) + self.bias
         output = self.sigmoid(lin_output)
+        self.input = input
         self.output = output
         self.params = [self.W, self.bias]
         self.lin_output = lin_output
@@ -53,19 +52,16 @@ class FullyConnectedLayer():
     def softmax_output(self, input):
         lin_output = np.dot(self.W, input) + self.bias
         output = self.softmax(lin_output)
+        self.input = input
         self.output = output
         self.params = [self.W, self.bias]
         self.lin_output = lin_output
 
     def backprop(self, layer, flag, target):
         if flag == 0:
-            # softmax layer instead of sigmoid, error function
-            output = self.softmax(self.lin_output)
-            self.error = output - target
-            print self.error.shape
-            print np.transpose(self.input).shape
-            self.gradient_w = np.dot(self.error, np.transpose(self.input))
-            self.gradient_b = self.error
+            self.error = self.output - target #matched w/gradient
+            self.gradient_w = np.dot(self.error, np.transpose(self.input)) #matched w/gradient
+            self.gradient_b = self.error #matched w/gradient--fully connected layer should work; all debugged
         else:
             # sigmoid layer connected to another layer after it--these may not be correct, will need to calculate
             self.error = np.multiply(np.transpose(layer.W)*layer.error, np.multiply(self.output, 1-self.output)) #derivative of sigmoid is sigma*(1-sigma)
