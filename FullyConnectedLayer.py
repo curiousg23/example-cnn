@@ -18,7 +18,8 @@ class FullyConnectedLayer():
         """
         # weight matrix initialization
         rng = rand.RandomState(23455)
-        W = np.asarray(rng.uniform(low=-1.0/(np.sqrt(f_in)), high=1.0/(np.sqrt(f_in)), size=(f_out,f_in)))
+        W = np.ones((f_out,f_in))
+        # W = np.asarray(rng.uniform(low=-1.0/(np.sqrt(f_in)), high=1.0/(np.sqrt(f_in)), size=(f_out,f_in)))
 
         #bias initialization
         bias = np.zeros((f_out,1)) #potentially need the 2nd dimension to be nonsingular if multiple batches
